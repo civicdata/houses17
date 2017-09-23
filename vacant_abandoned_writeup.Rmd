@@ -1,0 +1,56 @@
+---
+title: "Vacant and Abandoned Properties - Louisville"
+author: "Robert Kahne"
+date: "September 23, 2017"
+output: html_document
+---
+
+During the National Day of Civic Hacking on September 23, 2017, and group from Louisville, Kentucky investigated the vacant and abandoned properties in Louisville.  The team decided to use various data sources on the Louisville Open Data Portal to determine the cost to the city of maintaining the properties, and the revenues which might be collected from the properties.  The leaflet below is the product of our work.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.show = 'hold', fig.align='center'}
+library(leaflet)
+library(tidyverse)
+library(magrittr)
+
+load('./data/vacant_abandoned_data.rda')
+load('./data/louisville_zip_shapefile.rda')
+
+jeff_co_zip@data %<>%
+  left_join(vacant_abandoned_zip, by = c('ZCTA5CE10' = 'ZIP'))
+
+bins <- c(0, 75, 150, 225, 300, 375, 450, 525, 600, 675)
+pal <- colorBin("YlOrRd", domain = jeff_co_zip@data$`Number of Properties`, bins = bins)
+labels <- sprintf(
+  "<strong>%s</strong><br/>Number of Properties: %g<br>
+  Avg. Years Abandoned: %s<br>
+  Total City Expenses: %s<br>
+  Total Delinquent Tax Amt: %s<br>
+  Total Leins: %s",
+  jeff_co_zip@data$ZCTA5CE10, jeff_co_zip@data$`Number of Properties`, jeff_co_zip@data$`Avg. Years Abandoned`,
+  jeff_co_zip@data$`Total City Expenses`, jeff_co_zip@data$`Total Delinquent Tax Amt`, jeff_co_zip@data$`Total Leins`) %>% 
+  lapply(htmltools::HTML)
+
+
+leaflet(jeff_co_zip)  %>% 
+  addTiles() %>% 
+  addPolygons(data = jeff_co_zip,
+              fillColor = ~pal(`Number of Properties`),
+              weight = 2,
+              opacity = 1,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.7,
+              highlight = highlightOptions(
+                weight = 5,
+                color = "#666",
+                dashArray = "",
+                fillOpacity = 0.7,
+                bringToFront = TRUE),
+              label = labels,
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto"))
+
+```
+
